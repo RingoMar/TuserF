@@ -1,25 +1,31 @@
-import requests
 import re
 import sys
-from progress.bar import Bar
 
-print ("Welcome the Twitch User finder....")
-print ("version 1.0.0")
+from progress.bar import Bar
+import requests
+
+open("data/names.json", "w").close()
+open("data/found.json", "w").close()
+print("Welcome the Twitch User finder....")
+print("version 1.2.8")
 
 client_id = "mkenjzkw63k3ld902tdfnmwpwjdn5v" #replace with your id
 name = sys.argv[1]
 
-# turns the name into the user id for twitch to use 
+# turns the name into the user id for twitch to use
 
-def get_id():
-    url = ('https://api.twitch.tv/helix/users?login={}'.format(name.lower()))
+
+def get_id(unamer):
+    url = ('https://api.twitch.tv/helix/users?login={}'.format(unamer.lower()))
     headers = {'Client-ID': client_id,
                'Accept': 'application/vnd.twitchtv.v5+json'}
     r = requests.get(url, headers=headers).json()
     id_ = (r['data'][0]['id'])
     return id_
 
-idnum = get_id()
+
+idnum = get_id(name)
+
 
 rawlinks = {
     1: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100".format(idnum),
@@ -46,12 +52,12 @@ rawlinks = {
 }
 
 # checks the urls above for names of channels user follows
-open("data/names.json", "w").close()
 print("Getting the names of channels")
 with open("data/names.json", "a+") as f:
     for i in range(1, 22):
         url = rawlinks[i]
-        headers = {'Client-ID': client_id ,'Accept': 'application/vnd.twitchtv.v5+json'}
+        headers = {'Client-ID': client_id,
+                   'Accept': 'application/vnd.twitchtv.v5+json'}
         n = requests.get(url, headers=headers).json()
         pages = n["_total"]
         for i in range(0, pages):
@@ -68,32 +74,50 @@ print
 print("Checking the chats!")
 
 # starts to look for the user
-with open ("data/names.json", "r") as namesfile:
-    count = 0
-    maxnu =(int(pages))
-    bar = Bar('Checking Channels', max=maxnu, suffix='%(index)d/%(max)d - %(percent)d%% [ETA: %(eta_td)s || TIME: %(elapsed_td)s ]')
-    for line in namesfile:
-        for x in range(0, pages):
-            try:
-                if (' ' in line) == True:
-                    continue
-                else:
-                    bar.next()
-                    selname = line.rstrip('\n')
-                    url = ("https://tmi.twitch.tv/group/user/{}/chatters").format(selname.lower())
-                    rn = requests.get(url).json()
-
-                    stream = str(rn)
-                    name = sys.argv[1]
-                    UserName = (r"{}").format(name)
-                    if re.findall(UserName, stream):
-                        print ("\nFound '{}' in {}".format(name, line))
-                        count += 1
+with open("data/names.json", "r") as namesfile:
+    with open("data/found.json", "a") as strumers:
+        count = 0
+        maxnu = (int(pages))
+        bar = Bar('Checking Channels', max=maxnu,
+                  suffix='%(index)d/%(max)d - %(percent)d%% [ETA: %(eta_td)s || TIME: %(elapsed_td)s ]')
+        for line in namesfile:
+            for x in range(0, pages):
+                try:
+                    if (' ' in line) == True:
+                        continue
                     else:
-                        pass 
-            except IndexError:
-                pass
-            break 
+                        bar.next()
+                        selname = line.rstrip('\n')
+                        url = (
+                            "https://tmi.twitch.tv/group/user/{}/chatters").format(selname.lower())
+                        rn = requests.get(url).json()
+                        stream = str(rn)
+                        name = sys.argv[1]
+                        UserName = (r"{}").format(name)
+                        if re.findall(UserName, stream):
+                            print("\nFound '{}' in {}".format(name, line))
+                            strumers.write(line)
+                            count += 1
+                        else:
+                            pass
+                except IndexError:
+                    pass
+                break
 
-print ("\nThe user '{}' was found in {} channels.".format(name, count))
+print("\nThe user '{}' was found in {} channels.\n".format(name, count))
 open("data/names.json", "w").close()
+
+with open("data/found.json", "r") as liveck:
+    for line in liveck:
+        dename = line.rstrip('\n')
+        liveid = get_id(dename)
+        url = "https://api.twitch.tv/kraken/streams/{}".format(liveid)
+        headers = {'Client-ID': client_id,
+                   'Accept': 'application/vnd.twitchtv.v5+json'}
+        live = requests.get(url, headers=headers).json()
+
+        if not live["stream"]:
+            print("{} is offline".format(line.rstrip('\n')))
+        else:
+            print("{} is online playing {} to {} viewers!".format(
+                line.rstrip('\n'), live["stream"]["game"], live["stream"]["viewers"]))
