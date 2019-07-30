@@ -8,10 +8,10 @@ from requests import Session
 
 init()
 
-print("-- Starting: Find User Script" )
-print(Fore.RED + "Version 2.0"+ Style.RESET_ALL)
+print("-- Starting: Find User Script")
+print(Fore.RED + "Version 2.0" + Style.RESET_ALL)
 
-client_id = "zdllyq8tr3qg6piu3p3vzk2puvng5v"  # replace with your id
+client_id = ""  # replace with your id
 ############################################################################
 
 name = sys.argv[1]
@@ -20,7 +20,6 @@ users = []
 found = []
 
 # turns the name into the user id for twitch to use
-
 def get_id():
     s = requests.Session()
     url = ('https://api.twitch.tv/helix/users?login={}'.format(name.lower()))
@@ -29,12 +28,15 @@ def get_id():
     id_ = (r['data'][0]['id'])
     return id_
 
+
 _id = get_id()
 
+# finds all the followers the user has and adds the users to a list
 def getfollows():
     print(Fore.BLUE + "> Finding the follows of the user." + Style.RESET_ALL)
     s = requests.Session()
-    url = (f'https://api.twitch.tv/helix/users/follows?from_id={_id}&first=100')
+    url = (
+        f'https://api.twitch.tv/helix/users/follows?from_id={_id}&first=100')
     headers = {'Client-ID': client_id}
     r = s.get(url, headers=headers).json()
     nextkey = r['pagination']['cursor']
@@ -45,7 +47,8 @@ def getfollows():
         pass
     while nextkey:
         try:
-            url = (f'https://api.twitch.tv/helix/users/follows?from_id={_id}&first=100&after={nextkey}')
+            url = (
+                f'https://api.twitch.tv/helix/users/follows?from_id={_id}&first=100&after={nextkey}')
             headers = {'Client-ID': client_id}
             r = s.get(url, headers=headers).json()
             nextkey = r['pagination']['cursor']
@@ -61,13 +64,16 @@ def getfollows():
 
     return
 
+# the main part of the program
 def run():
     print(Fore.BLUE + "> Starting the program" + Style.RESET_ALL)
     getfollows()
     print(Fore.CYAN + "> Cheacking chats")
     s = requests.Session()
-    for username in tqdm.tqdm(range(0, len(users) )):
-        url = ("https://tmi.twitch.tv/group/user/{}/chatters").format(users[username].lower())
+    for username in tqdm.tqdm(range(0, len(users))):
+        # looks for them in the chat 
+        url = (
+            "https://tmi.twitch.tv/group/user/{}/chatters").format(users[username].lower())
         rn = s.get(url).json()
         stream = str(rn)
         thename = str(f"{name}")
@@ -97,18 +103,23 @@ def run():
         except TypeError:
             pass
     if found:
+        # if they are found looks to see if the channel is live or not
         print(Fore.BLUE + "> Cheacking found channels for status" + Style.RESET_ALL)
         for foundusers in range(0, len(found)):
-            url = (f"https://api.twitch.tv/helix/streams?user_login={str(found[foundusers]).lower()}")
+            url = (
+                f"https://api.twitch.tv/helix/streams?user_login={str(found[foundusers]).lower()}")
             headers = {'Client-ID': client_id}
             r = s.get(url, headers=headers).json()
             try:
                 if str(r["data"][0]["type"]) == "live":
-                    print(Fore.WHITE + Back.GREEN + f"Found '{name}' in: {r['data'][0]['user_name']}, they are now live! [{r['data'][0]['title']}]" + Style.RESET_ALL )
+                    print(Fore.WHITE + Back.GREEN +
+                          f"Found '{name}' in: {r['data'][0]['user_name']}, they are now live! [{r['data'][0]['title']}]" + Style.RESET_ALL)
             except IndexError:
-                print(Fore.RED + f"Found '{name}' in: {found[foundusers]}, they a offline." + Style.RESET_ALL)
+                print(
+                    Fore.RED + f"Found '{name}' in: {found[foundusers]}, they a offline." + Style.RESET_ALL)
     else:
         print(Fore.RED + f"'{name}' not found." + Style.RESET_ALL)
     return
+
 
 run()
