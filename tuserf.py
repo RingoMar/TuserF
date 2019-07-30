@@ -1,123 +1,111 @@
 import re
 import sys
 
-from progress.bar import Bar
 import requests
+import tqdm
+from colorama import Back, Fore, Style, init
+from requests import Session
 
-open("data/names.json", "w").close()
-open("data/found.json", "w").close()
-print("Welcome the Twitch User finder....")
-print("version 1.2.8")
+init()
 
-client_id = "mkenjzkw63k3ld902tdfnmwpwjdn5v" #replace with your id
+print("-- Starting: Find User Script" )
+print(Fore.RED + "Version 2.0"+ Style.RESET_ALL)
+
+client_id = "zdllyq8tr3qg6piu3p3vzk2puvng5v"  # replace with your id
+############################################################################
+
 name = sys.argv[1]
+nextkey = ""
+users = []
+found = []
 
 # turns the name into the user id for twitch to use
 
-
-def get_id(unamer):
-    url = ('https://api.twitch.tv/helix/users?login={}'.format(unamer.lower()))
-    headers = {'Client-ID': client_id,
-               'Accept': 'application/vnd.twitchtv.v5+json'}
-    r = requests.get(url, headers=headers).json()
+def get_id():
+    s = requests.Session()
+    url = ('https://api.twitch.tv/helix/users?login={}'.format(name.lower()))
+    headers = {'Client-ID': client_id}
+    r = s.get(url, headers=headers).json()
     id_ = (r['data'][0]['id'])
     return id_
 
+_id = get_id()
 
-idnum = get_id(name)
-
-
-rawlinks = {
-    1: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100".format(idnum),
-    2: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=100".format(idnum),
-    3: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=200".format(idnum),
-    4: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=300".format(idnum),
-    5: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=400".format(idnum),
-    6: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=500".format(idnum),
-    7: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=600".format(idnum),
-    8: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=700".format(idnum),
-    9: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=800".format(idnum),
-    10: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=900".format(idnum),
-    11: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=1000".format(idnum),
-    12: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=1100".format(idnum),
-    13: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=1200".format(idnum),
-    14: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=1300".format(idnum),
-    15: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=1400".format(idnum),
-    16: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=1500".format(idnum),
-    17: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=1600".format(idnum),
-    18: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=1700".format(idnum),
-    19: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=1800".format(idnum),
-    20: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=1900".format(idnum),
-    21: "https://api.twitch.tv/kraken/users/{}/follows/channels?limit=100&offset=2000".format(idnum)
-}
-
-# checks the urls above for names of channels user follows
-print("Getting the names of channels")
-with open("data/names.json", "a+") as f:
-    for i in range(1, 22):
-        url = rawlinks[i]
-        headers = {'Client-ID': client_id,
-                   'Accept': 'application/vnd.twitchtv.v5+json'}
-        n = requests.get(url, headers=headers).json()
-        pages = n["_total"]
-        for i in range(0, pages):
+def getfollows():
+    print(Fore.BLUE + "> Finding the follows of the user." + Style.RESET_ALL)
+    s = requests.Session()
+    url = (f'https://api.twitch.tv/helix/users/follows?from_id={_id}&first=100')
+    headers = {'Client-ID': client_id}
+    r = s.get(url, headers=headers).json()
+    nextkey = r['pagination']['cursor']
+    try:
+        for x in range(0, len(r['data']) + 1):
+            users.append(r['data'][x]['to_name'])
+    except IndexError:
+        pass
+    while nextkey:
+        try:
+            url = (f'https://api.twitch.tv/helix/users/follows?from_id={_id}&first=100&after={nextkey}')
+            headers = {'Client-ID': client_id}
+            r = s.get(url, headers=headers).json()
+            nextkey = r['pagination']['cursor']
             try:
-                idname = (n["follows"][i]["channel"]["display_name"])
-                f.write(str("{}\n").format(idname))
-                f.close
-            except UnicodeEncodeError:
-                pass
+                for x in range(0, len(r['data']) + 1):
+                    users.append(r['data'][x]['to_name'])
             except IndexError:
                 pass
-print("Done...")
-print
-print("Checking the chats!")
+        except Exception as e:
+            users.append(name)
+            nextkey = ""
+            print(Fore.BLUE + "> Found all channels..." + Style.RESET_ALL)
 
-# starts to look for the user
-with open("data/names.json", "r") as namesfile:
-    with open("data/found.json", "a") as strumers:
-        count = 0
-        maxnu = (int(pages))
-        bar = Bar('Checking Channels', max=maxnu,
-                  suffix='%(index)d/%(max)d - %(percent)d%% [ETA: %(eta_td)s || TIME: %(elapsed_td)s ]')
-        for line in namesfile:
-            for x in range(0, pages):
-                try:
-                    if (' ' in line) == True:
-                        continue
-                    else:
-                        bar.next()
-                        selname = line.rstrip('\n')
-                        url = (
-                            "https://tmi.twitch.tv/group/user/{}/chatters").format(selname.lower())
-                        rn = requests.get(url).json()
-                        stream = str(rn)
-                        name = sys.argv[1]
-                        UserName = (r"{}").format(name)
-                        if re.findall(UserName, stream):
-                            print("\nFound '{}' in {}".format(name, line))
-                            strumers.write(line)
-                            count += 1
-                        else:
-                            pass
-                except IndexError:
-                    pass
-                break
+    return
 
-print("\nThe user '{}' was found in {} channels.\n".format(name, count))
-open("data/names.json", "w").close()
+def run():
+    print(Fore.BLUE + "> Starting the program" + Style.RESET_ALL)
+    getfollows()
+    print(Fore.CYAN + "> Cheacking chats")
+    s = requests.Session()
+    for username in tqdm.tqdm(range(0, len(users) )):
+        url = ("https://tmi.twitch.tv/group/user/{}/chatters").format(users[username].lower())
+        rn = s.get(url).json()
+        stream = str(rn)
+        thename = str(f"{name}")
+        UserName = (thename)
+        try:
+            for x in range(0, len(rn["chatters"]["viewers"])):
+                if str(rn["chatters"]["viewers"][x]) == name:
+                    found.append(users[username])
+            for x in range(0, len(rn["chatters"]["moderators"])):
+                if str(rn["chatters"]["moderators"][x]) == name:
+                    found.append(users[username])
+            for x in range(0, len(rn["chatters"]["vips"])):
+                if str(rn["chatters"]["vips"][x]) == name:
+                    found.append(users[username])
+            for x in range(0, len(rn["chatters"]["broadcaster"])):
+                if str(rn["chatters"]["broadcaster"][x]) == name:
+                    found.append(users[username])
+            for x in range(0, len(rn["chatters"]["staff"])):
+                if str(rn["chatters"]["staff"][x]) == name:
+                    found.append(users[username])
+            for x in range(0, len(rn["chatters"]["admins"])):
+                if str(rn["chatters"]["admins"][x]) == name:
+                    found.append(users[username])
+            for x in range(0, len(rn["chatters"]["global_mods"])):
+                if str(rn["chatters"]["global_mods"][x]) == name:
+                    found.append(users[username])
+        except TypeError:
+            pass
+    print(Fore.BLUE + "> Cheacking found channels for status" + Style.RESET_ALL)
+    for foundusers in range(0, len(found)):
+        url = (f"https://api.twitch.tv/helix/streams?user_login={str(found[foundusers]).lower()}")
+        headers = {'Client-ID': client_id}
+        r = s.get(url, headers=headers).json()
+        try:
+            if str(r["data"][0]["type"]) == "live":
+                print(Fore.WHITE + Back.GREEN + f"Found '{name}' in: {r['data'][0]['user_name']}, they are now live! [{r['data'][0]['title']}]" + Style.RESET_ALL )
+        except IndexError:
+            print(Fore.RED + f"Found '{name}' in: {found[foundusers]}, they a offline." + Style.RESET_ALL)
+    return
 
-with open("data/found.json", "r") as liveck:
-    for line in liveck:
-        dename = line.rstrip('\n')
-        liveid = get_id(dename)
-        url = "https://api.twitch.tv/kraken/streams/{}".format(liveid)
-        headers = {'Client-ID': client_id,
-                   'Accept': 'application/vnd.twitchtv.v5+json'}
-        live = requests.get(url, headers=headers).json()
-
-        if not live["stream"]:
-            print("{} is offline".format(line.rstrip('\n')))
-        else:
-            print("{} is online playing {} to {} viewers!".format(
-                line.rstrip('\n'), live["stream"]["game"], live["stream"]["viewers"]))
+run()
