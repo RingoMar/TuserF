@@ -1,11 +1,14 @@
 # Twitch User Finder
-This is a simple script I made in my free time to use [Twitch](twitch.tv)'s public API. It's used to find Twitch users in channels, because who doesn't want to know what channels their friends who have the "OFFLINE" status are watching/lurking in..
-also can be used to find sub gifters 😉
+A simple script that makes use of [Twitch](twitch.tv) public API to find users.
 # How to get started
 You would need [Python3](https://www.python.org/downloads/) or later.
-# Libraries 
-* [Requests](http://docs.python-requests.org/en/master/user/install/)
-* [Progress](https://pypi.org/project/progress/)
+# External Libraries 
+* [Colorama](https://pypi.org/project/colorama/)
+* [tqdm](https://pypi.org/project/tqdm/)
+___
+`pip install [Library]`
+___
+**Replace "Library" above with the one you are installing**
 
 ## Client Id: 
 * Go to [Twitch Dev Website](https://glass.twitch.tv/console/apps/create)
@@ -17,7 +20,6 @@ You would need [Python3](https://www.python.org/downloads/) or later.
 * Replace the **Client ID** on Line 9 with the new one
 
 # How to Run
-* Navigate to your folder where you have downloaded the files with CMD... 
 ___
 Now run the line `python tuserF.py username`
 ___
