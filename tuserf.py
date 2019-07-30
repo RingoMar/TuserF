@@ -96,16 +96,19 @@ def run():
                     found.append(users[username])
         except TypeError:
             pass
-    print(Fore.BLUE + "> Cheacking found channels for status" + Style.RESET_ALL)
-    for foundusers in range(0, len(found)):
-        url = (f"https://api.twitch.tv/helix/streams?user_login={str(found[foundusers]).lower()}")
-        headers = {'Client-ID': client_id}
-        r = s.get(url, headers=headers).json()
-        try:
-            if str(r["data"][0]["type"]) == "live":
-                print(Fore.WHITE + Back.GREEN + f"Found '{name}' in: {r['data'][0]['user_name']}, they are now live! [{r['data'][0]['title']}]" + Style.RESET_ALL )
-        except IndexError:
-            print(Fore.RED + f"Found '{name}' in: {found[foundusers]}, they a offline." + Style.RESET_ALL)
+    if found:
+        print(Fore.BLUE + "> Cheacking found channels for status" + Style.RESET_ALL)
+        for foundusers in range(0, len(found)):
+            url = (f"https://api.twitch.tv/helix/streams?user_login={str(found[foundusers]).lower()}")
+            headers = {'Client-ID': client_id}
+            r = s.get(url, headers=headers).json()
+            try:
+                if str(r["data"][0]["type"]) == "live":
+                    print(Fore.WHITE + Back.GREEN + f"Found '{name}' in: {r['data'][0]['user_name']}, they are now live! [{r['data'][0]['title']}]" + Style.RESET_ALL )
+            except IndexError:
+                print(Fore.RED + f"Found '{name}' in: {found[foundusers]}, they a offline." + Style.RESET_ALL)
+    else:
+        print(Fore.RED + f"'{name}' not found." + Style.RESET_ALL)
     return
 
 run()
