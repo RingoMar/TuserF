@@ -21,7 +21,7 @@ ___
 
 # How to Run
 ___
-Now run the line `python tuserF.py username`
+Now run the line `python finduser.py username`
 ___
 **Replace "username" above with the user you're looking for**
 
