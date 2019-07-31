@@ -17,7 +17,7 @@ ___
 * Set **Category** to **Analytics Tool**
 * Now in the Developer Applications page, click **Manage** on the application you now made.
 * Now copy the **Client ID** 
-* Replace the **Client ID** on Line 9 with the new one
+* Replace the **client_id** on Line 19 with the new one
 
 # How to Run
 ___
